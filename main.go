@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/alexanderbkl/mytheresa-promotions/models"
+	"github.com/alexanderbkl/mytheresa-promotions/store"
 	"github.com/alexanderbkl/mytheresa-promotions/utils"
 
 	"github.com/go-redis/redis/v8"
@@ -35,27 +36,37 @@ func main() {
 	})
 
 	// Load products into Redis
-	loadProducts(rdb)
+	err := loadProducts(rdb)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Initialize product store
+	productsStore := store.NewRedisStore(rdb)
 
 	// Set up HTTP handlers
 	http.HandleFunc("/products", func(w http.ResponseWriter, r *http.Request) {
-		handleProducts(w, r, rdb)
+		handleProducts(w, r, productsStore)
 	})
 
 	log.Println("Starting server on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func loadProducts(rdb *redis.Client) {
+func loadProducts(rdb *redis.Client) error {
 	// Check if products are already loaded
 	exists, err := rdb.Exists(ctx, "products_loaded").Result()
-	if err != nil || exists == 1 {
-		return
+	if err != nil {
+		return err
+	}
+
+	if exists == 1 {
+		return nil
 	}
 
 	file, err := os.ReadFile("products.json")
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	var data struct {
@@ -64,27 +75,25 @@ func loadProducts(rdb *redis.Client) {
 
 	err = json.Unmarshal(file, &data)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	for _, product := range data.Products {
 		productJSON, err := json.Marshal(product)
 		if err != nil {
-			log.Println(err)
 			continue
 		}
 		err = rdb.Set(ctx, product.SKU, productJSON, 0).Err()
 		if err != nil {
-			log.Println(err)
 			continue
 		}
 	}
 
 	// Set a flag indicating products are loaded
-	rdb.Set(ctx, "products_loaded", "true", 0)
+	return rdb.Set(ctx, "products_loaded", "true", 0).Err()
 }
 
-func handleProducts(w http.ResponseWriter, r *http.Request, rdb *redis.Client) {
+func handleProducts(w http.ResponseWriter, r *http.Request, store store.ProductStore) {
 	// Parse query parameters
 	category := r.URL.Query().Get("category")
 	priceLessThanStr := r.URL.Query().Get("priceLessThan")
@@ -99,25 +108,14 @@ func handleProducts(w http.ResponseWriter, r *http.Request, rdb *redis.Client) {
 	}
 
 	// Fetch all products
-	keys, err := rdb.Keys(ctx, "00000*").Result()
+	products, err := store.GetProducts(ctx)
 	if err != nil {
 		http.Error(w, "Error fetching products", http.StatusInternalServerError)
 		return
 	}
 
-	var products []models.ProductResponse
-	for _, key := range keys {
-		val, err := rdb.Get(ctx, key).Result()
-		if err != nil {
-			continue
-		}
-
-		var product models.Product
-		err = json.Unmarshal([]byte(val), &product)
-		if err != nil {
-			continue
-		}
-
+	var responses []models.ProductResponse
+	for _, product := range products {
 		// Apply filters
 		if category != "" && product.Category != category {
 			continue
@@ -129,30 +127,30 @@ func handleProducts(w http.ResponseWriter, r *http.Request, rdb *redis.Client) {
 		// Apply discounts
 		discountPercentage, finalPrice := utils.CalculateDiscount(product)
 
-		priceDetails := models.PriceDetail{
+		priceDetail := models.PriceDetail{
 			Original: product.Price,
 			Final:    finalPrice,
 			Currency: "EUR",
 		}
 		if discountPercentage != nil {
-			priceDetails.DiscountPercentage = discountPercentage
+			priceDetail.DiscountPercentage = discountPercentage
 		}
 
-		products = append(products, models.ProductResponse{
+		responses = append(responses, models.ProductResponse{
 			SKU:      product.SKU,
 			Name:     product.Name,
 			Category: product.Category,
-			Price:    priceDetails,
+			Price:    priceDetail,
 		})
 
 		// Limit to 5 products
-		if len(products) == 5 {
+		if len(responses) == 5 {
 			break
 		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string][]models.ProductResponse{
-		"products": products,
+		"products": responses,
 	})
 }
