@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/alexanderbkl/mytheresa-promotions/models"
+	"github.com/alexanderbkl/mytheresa-promotions/utils"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -126,7 +127,7 @@ func handleProducts(w http.ResponseWriter, r *http.Request, rdb *redis.Client) {
 		}
 
 		// Apply discounts
-		discountPercentage, finalPrice := calculateDiscount(product)
+		discountPercentage, finalPrice := utils.CalculateDiscount(product)
 
 		priceDetails := models.PriceDetail{
 			Original: product.Price,
@@ -154,23 +155,4 @@ func handleProducts(w http.ResponseWriter, r *http.Request, rdb *redis.Client) {
 	json.NewEncoder(w).Encode(map[string][]models.ProductResponse{
 		"products": products,
 	})
-}
-
-func calculateDiscount(product models.Product) (*string, int) {
-	var discount int
-
-	if product.SKU == "000003" {
-		discount = 15
-	}
-	if product.Category == "boots" && discount < 30 {
-		discount = 30
-	}
-
-	if discount > 0 {
-		discountPercentage := fmt.Sprintf("%d%%", discount)
-		finalPrice := product.Price * (100 - discount) / 100
-		return &discountPercentage, finalPrice
-	}
-
-	return nil, product.Price
 }
