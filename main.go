@@ -7,11 +7,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 
+	"github.com/alexanderbkl/mytheresa-promotions/handlers"
 	"github.com/alexanderbkl/mytheresa-promotions/models"
 	"github.com/alexanderbkl/mytheresa-promotions/store"
-	"github.com/alexanderbkl/mytheresa-promotions/utils"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -45,9 +44,9 @@ func main() {
 	productsStore := store.NewRedisStore(rdb)
 
 	// Set up HTTP handlers
-	http.HandleFunc("/products", func(w http.ResponseWriter, r *http.Request) {
-		handleProducts(w, r, productsStore)
-	})
+	http.HandleFunc("/products",
+		handlers.ProductsHandler(productsStore),
+	)
 
 	log.Println("Starting server on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -93,6 +92,7 @@ func loadProducts(rdb *redis.Client) error {
 	return rdb.Set(ctx, "products_loaded", "true", 0).Err()
 }
 
+/*
 func handleProducts(w http.ResponseWriter, r *http.Request, store store.ProductStore) {
 	// Parse query parameters
 	category := r.URL.Query().Get("category")
@@ -154,3 +154,4 @@ func handleProducts(w http.ResponseWriter, r *http.Request, store store.ProductS
 		"products": responses,
 	})
 }
+*/
