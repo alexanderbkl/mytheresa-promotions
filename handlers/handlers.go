@@ -57,7 +57,7 @@ func ProductsHandler(store store.ProductStore) http.HandlerFunc {
 				Currency: "EUR",
 			}
 			if discountPercentage != nil {
-				priceDetail.DiscountPercentage = discountPercentage
+				priceDetail.DiscountPercentage = *discountPercentage
 			}
 
 			responses = append(responses, models.ProductResponse{
