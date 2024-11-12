@@ -18,6 +18,7 @@ const (
 )
 
 func TestCalculateDiscount(t *testing.T) {
+	// Define test cases
 	tests := []struct {
 		name             string
 		product          models.Product
@@ -61,12 +62,13 @@ func TestCalculateDiscount(t *testing.T) {
 
 	fmt.Println("Starting TestCalculateDiscount...")
 	for _, tt := range tests {
+		// Run each test case
 		t.Run(tt.name, func(t *testing.T) {
 			start := time.Now()
 			fmt.Printf("%sRunning test: %s%s\n", colorYellow, tt.name, colorReset)
 
 			discount, finalPrice := CalculateDiscount(tt.product)
-
+			// Check if the discount and final price match the expected values
 			if assert.Equal(t, tt.expectedDiscount, discount) && assert.Equal(t, tt.expectedPrice, finalPrice) {
 				duration := time.Since(start)
 				fmt.Printf("%s✔ PASS%s - %s (Time taken: %v)\n", colorGreen, colorReset, tt.name, duration)
