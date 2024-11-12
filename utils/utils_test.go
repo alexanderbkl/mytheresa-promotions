@@ -1,10 +1,20 @@
 package utils
 
 import (
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/alexanderbkl/mytheresa-promotions/models"
 	"github.com/stretchr/testify/assert"
+)
+
+// ANSI color codes
+const (
+	colorReset  = "\033[0m"
+	colorGreen  = "\033[32m"
+	colorRed    = "\033[31m"
+	colorYellow = "\033[33m"
 )
 
 func TestCalculateDiscount(t *testing.T) {
@@ -49,13 +59,24 @@ func TestCalculateDiscount(t *testing.T) {
 		},
 	}
 
+	fmt.Println("Starting TestCalculateDiscount...")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			start := time.Now()
+			fmt.Printf("%sRunning test: %s%s\n", colorYellow, tt.name, colorReset)
+
 			discount, finalPrice := CalculateDiscount(tt.product)
-			assert.Equal(t, tt.expectedDiscount, discount)
-			assert.Equal(t, tt.expectedPrice, finalPrice)
+
+			if assert.Equal(t, tt.expectedDiscount, discount) && assert.Equal(t, tt.expectedPrice, finalPrice) {
+				duration := time.Since(start)
+				fmt.Printf("%s✔ PASS%s - %s (Time taken: %v)\n", colorGreen, colorReset, tt.name, duration)
+			} else {
+				duration := time.Since(start)
+				fmt.Printf("%s✘ FAIL%s - %s (Time taken: %v)\n", colorRed, colorReset, tt.name, duration)
+			}
 		})
 	}
+	fmt.Println("Completed TestCalculateDiscount.")
 }
 
 func strPointer(s string) *string {
