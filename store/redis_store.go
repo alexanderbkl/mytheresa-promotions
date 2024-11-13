@@ -21,7 +21,7 @@ func NewRedisStore(client *redis.Client) *RedisStore {
 }
 
 func (s *RedisStore) GetProducts(ctx context.Context) ([]models.Product, error) {
-	keys, err := s.Client.Keys(ctx, "00000*").Result()
+	keys, err := s.Client.Keys(ctx, "*").Result()
 	if err != nil {
 		return nil, err
 	}
