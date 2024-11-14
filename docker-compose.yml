@@ -1,4 +1,5 @@
 services:
+# Main application service
   app:
     build: .
     ports:
@@ -10,13 +11,20 @@ services:
       - REDIS_PORT=6379
     networks:
       - app-network
-
+  # Redis database service
   redis:
     image: redis:alpine
     ports:
       - "6379:6379"
     networks:
       - app-network
+  # Test service
+  test:
+    image: golang:1.19
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["go", "test", "./...", "-v"]
 
 networks:
   app-network:

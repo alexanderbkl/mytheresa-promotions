@@ -28,7 +28,10 @@ cd mytheresa-promotions
 
 Build and start the application using Docker Compose:
 ```shell
-docker-compose up --build
+# If you have Linux/MAC OS installed
+make run
+# Or directly using Docker Compose
+docker-compose up app --build
 ```
 
 The API will be available at http://localhost:8080.
@@ -76,8 +79,8 @@ To run the unit tests:
 # If you have Linux/MAC OS installed
 make test
 
-# Or directly using Go
-go test ./... -v
+# Or directly using Docker Compose
+docker compose up test --build
 ```
 
 ## Project Structure
