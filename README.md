@@ -31,7 +31,7 @@ Build and start the application using Docker Compose:
 # If you have Linux/MAC OS installed
 make run
 # Or directly using Docker Compose
-docker-compose up app --build
+docker compose up app --build
 ```
 
 The API will be available at http://localhost:8080.
